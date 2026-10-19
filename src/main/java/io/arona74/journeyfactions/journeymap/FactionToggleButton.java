@@ -1,20 +1,19 @@
 package io.arona74.journeyfactions.journeymap;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.arona74.journeyfactions.JourneyFactions;
 import journeymap.api.v2.client.IClientAPI;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.Identifier;
-import org.lwjgl.glfw.GLFW;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
 
 /**
  * Creates JourneyMap GUI integration for faction controls
  */
 public class FactionToggleButton {
     
-    private static KeyBinding toggleKeyBinding;
+    private static KeyMapping toggleKeyBinding;
     private static boolean isInitialized = false;
     
     /**
@@ -39,23 +38,22 @@ public class FactionToggleButton {
             JourneyFactions.debugLog("Setting up faction toggle keybinding...");
             
             // Create a keybinding for toggling faction display
-            toggleKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+            toggleKeyBinding = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.journeyfactions.toggle", // Translation key
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_G, // Default to 'G' key
-                KeyBinding.Category.create(Identifier.of("journeyfactions", "category")) // Category
+                InputConstants.KEY_G, // Default to 'G' key
+                KeyMapping.Category.register(Identifier.fromNamespaceAndPath("journeyfactions", "category")) // Category
             ));
             
             JourneyFactions.debugLog("Keybinding registered: {}", toggleKeyBinding != null ? "SUCCESS" : "FAILED");
             
             if (toggleKeyBinding != null) {
-                JourneyFactions.debugLog("Keybinding details: {}", toggleKeyBinding.getBoundKeyLocalizedText().getString());
+                JourneyFactions.debugLog("Keybinding details: {}", toggleKeyBinding.getTranslatedKeyMessage().getString());
             }
             
             // Register tick event to check for key presses
             ClientTickEvents.END_CLIENT_TICK.register(client -> {
                 try {
-                    if (toggleKeyBinding != null && toggleKeyBinding.wasPressed()) {
+                    if (toggleKeyBinding != null && toggleKeyBinding.consumeClick()) {
                         JourneyFactions.debugLog("'G' key pressed - toggling faction display");
                         toggleFactionDisplay();
                     }
@@ -90,20 +88,17 @@ public class FactionToggleButton {
             
             // Show message to player
             try {
-                net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+                net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
                 if (client != null && client.player != null) {
                     String message = String.format("§eFaction territories: %s", 
                         isNowEnabled ? "§aShown" : "§cHidden");
                     
-                    // Send both action bar and chat message for better visibility
-                    client.player.sendMessage(
-                        net.minecraft.text.Text.literal(message), 
-                        true // Action bar
+                    client.player.sendOverlayMessage(
+                        net.minecraft.network.chat.Component.literal(message)
                     );
                     
-                    client.player.sendMessage(
-                        net.minecraft.text.Text.literal("[JourneyFactions] " + message), 
-                        false // Chat
+                    client.player.sendSystemMessage(
+                        net.minecraft.network.chat.Component.literal("[JourneyFactions] " + message)
                     );
                     
                     JourneyFactions.debugLog("Sent toggle message to player");
@@ -130,7 +125,7 @@ public class FactionToggleButton {
         JourneyFactions.debugLog("Keybinding object: {}", toggleKeyBinding != null ? "EXISTS" : "NULL");
         
         if (toggleKeyBinding != null) {
-            JourneyFactions.debugLog("Bound key: {}", toggleKeyBinding.getBoundKeyLocalizedText().getString());
+            JourneyFactions.debugLog("Bound key: {}", toggleKeyBinding.getTranslatedKeyMessage().getString());
             JourneyFactions.debugLog("Category: {}", toggleKeyBinding.getCategory());
         }
         
@@ -159,7 +154,7 @@ public class FactionToggleButton {
      */
     public static String getStatus() {
         String keybind = toggleKeyBinding != null 
-            ? toggleKeyBinding.getBoundKeyLocalizedText().getString() 
+            ? toggleKeyBinding.getTranslatedKeyMessage().getString() 
             : "Not available";
         
         return String.format("Faction Toggle: [%s] | Initialized: %s | Status: %s", 

@@ -7,8 +7,8 @@ import io.icker.factions.api.persistents.Faction;
 import io.icker.factions.core.FactionsManager;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -28,8 +28,8 @@ public class JourneyFactionsIntegration {
         // Note: Payload types are registered in JourneyFactionsMain.registerNetworkPayloads()
 
         // Handle client requests for faction data
-        ServerPlayNetworking.registerGlobalReceiver(ClientRequestDataPayload.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
+        ServerPlayNetworking.registerGlobalReceiver(ClientRequestDataPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
             JourneyFactionsMain.LOGGER.info("Player {} requested factions data for JourneyMap", player.getName().getString());
 
             context.server().execute(() -> {
@@ -54,7 +54,7 @@ public class JourneyFactionsIntegration {
     /**
      * Send all faction data to a player
      */
-    public static void sendFactionDataToPlayer(ServerPlayerEntity player) {
+    public static void sendFactionDataToPlayer(ServerPlayer player) {
         try {
             JourneyFactionsMain.LOGGER.debug("Sending factions data to player: {}", player.getName().getString());
 
@@ -86,7 +86,7 @@ public class JourneyFactionsIntegration {
             FactionUpdatePayload payload = new FactionUpdatePayload(createFactionData(faction));
 
             // Send to all online players
-            for (ServerPlayerEntity player : FactionsManager.playerManager.getPlayerList()) {
+            for (ServerPlayer player : FactionsManager.playerManager.getPlayers()) {
                 ServerPlayNetworking.send(player, payload);
             }
 
@@ -102,10 +102,10 @@ public class JourneyFactionsIntegration {
         try {
             JourneyFactionsMain.LOGGER.debug("Broadcasting chunk claim: {} by {}", chunk, faction.getName());
 
-            ChunkClaimPayload payload = new ChunkClaimPayload(faction.getID().toString(), chunk.x, chunk.z);
+            ChunkClaimPayload payload = new ChunkClaimPayload(faction.getID().toString(), chunk.x(), chunk.z());
 
             // Send to all online players
-            for (ServerPlayerEntity player : FactionsManager.playerManager.getPlayerList()) {
+            for (ServerPlayer player : FactionsManager.playerManager.getPlayers()) {
                 ServerPlayNetworking.send(player, payload);
             }
 
@@ -121,10 +121,10 @@ public class JourneyFactionsIntegration {
         try {
             JourneyFactionsMain.LOGGER.debug("Broadcasting chunk unclaim: {}", chunk);
 
-            ChunkUnclaimPayload payload = new ChunkUnclaimPayload(chunk.x, chunk.z);
+            ChunkUnclaimPayload payload = new ChunkUnclaimPayload(chunk.x(), chunk.z());
 
             // Send to all online players
-            for (ServerPlayerEntity player : FactionsManager.playerManager.getPlayerList()) {
+            for (ServerPlayer player : FactionsManager.playerManager.getPlayers()) {
                 ServerPlayNetworking.send(player, payload);
             }
 
@@ -143,7 +143,7 @@ public class JourneyFactionsIntegration {
             FactionDeletePayload payload = new FactionDeletePayload(faction.getID().toString());
 
             // Send to all online players
-            for (ServerPlayerEntity player : FactionsManager.playerManager.getPlayerList()) {
+            for (ServerPlayer player : FactionsManager.playerManager.getPlayers()) {
                 ServerPlayNetworking.send(player, payload);
             }
 
@@ -167,7 +167,7 @@ public class JourneyFactionsIntegration {
 
         List<ChunkData> chunks = new ArrayList<>();
         for (ChunkPos chunk : getChunkPosFromClaims(faction)) {
-            chunks.add(new ChunkData(chunk.x, chunk.z));
+            chunks.add(new ChunkData(chunk.x(), chunk.z()));
         }
 
         return new FactionData(id, name, displayName, typeOrdinal, hasColor, colorRgb, chunks);
@@ -255,9 +255,9 @@ public class JourneyFactionsIntegration {
     }
 
     /**
-     * Parse Minecraft Formatting enum to Java Color
+     * Parse Minecraft ChatFormatting enum to Java Color
      */
-    private static Color parseMinecraftFormattingColor(net.minecraft.util.Formatting formatting) {
+    private static Color parseMinecraftFormattingColor(net.minecraft.ChatFormatting formatting) {
         switch (formatting) {
             case BLACK: return new Color(0, 0, 0);
             case DARK_BLUE: return new Color(0, 0, 170);

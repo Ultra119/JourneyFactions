@@ -1,16 +1,16 @@
 package io.arona74.journeyfactions.network;
 
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Network payloads for faction data synchronization (1.21+ compatible)
+ * Network payloads for faction data synchronization (Minecraft 26.3 compatible)
  */
 public class FactionPayloads {
 
@@ -20,9 +20,9 @@ public class FactionPayloads {
      * Chunk data for network transfer
      */
     public record ChunkData(int x, int z) {
-        public static final PacketCodec<RegistryByteBuf, ChunkData> CODEC = PacketCodec.tuple(
-                PacketCodecs.VAR_INT, ChunkData::x,
-                PacketCodecs.VAR_INT, ChunkData::z,
+        public static final StreamCodec<RegistryFriendlyByteBuf, ChunkData> CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, ChunkData::x,
+                ByteBufCodecs.VAR_INT, ChunkData::z,
                 ChunkData::new
         );
     }
@@ -39,18 +39,17 @@ public class FactionPayloads {
             int colorRgb,
             List<ChunkData> chunks
     ) {
-        // Manual codec for 7+ fields
-        public static final PacketCodec<RegistryByteBuf, FactionData> CODEC = new PacketCodec<>() {
+        public static final StreamCodec<RegistryFriendlyByteBuf, FactionData> CODEC = new StreamCodec<>() {
             @Override
-            public FactionData decode(RegistryByteBuf buf) {
-                String id = PacketCodecs.STRING.decode(buf);
-                String name = PacketCodecs.STRING.decode(buf);
-                String displayName = PacketCodecs.STRING.decode(buf);
-                int typeOrdinal = PacketCodecs.VAR_INT.decode(buf);
+            public FactionData decode(RegistryFriendlyByteBuf buf) {
+                String id = ByteBufCodecs.STRING_UTF8.decode(buf);
+                String name = ByteBufCodecs.STRING_UTF8.decode(buf);
+                String displayName = ByteBufCodecs.STRING_UTF8.decode(buf);
+                int typeOrdinal = ByteBufCodecs.VAR_INT.decode(buf);
                 boolean hasColor = buf.readBoolean();
-                int colorRgb = PacketCodecs.VAR_INT.decode(buf);
+                int colorRgb = ByteBufCodecs.VAR_INT.decode(buf);
 
-                int chunkCount = PacketCodecs.VAR_INT.decode(buf);
+                int chunkCount = ByteBufCodecs.VAR_INT.decode(buf);
                 List<ChunkData> chunks = new ArrayList<>(chunkCount);
                 for (int i = 0; i < chunkCount; i++) {
                     chunks.add(ChunkData.CODEC.decode(buf));
@@ -60,15 +59,15 @@ public class FactionPayloads {
             }
 
             @Override
-            public void encode(RegistryByteBuf buf, FactionData data) {
-                PacketCodecs.STRING.encode(buf, data.id);
-                PacketCodecs.STRING.encode(buf, data.name);
-                PacketCodecs.STRING.encode(buf, data.displayName);
-                PacketCodecs.VAR_INT.encode(buf, data.typeOrdinal);
+            public void encode(RegistryFriendlyByteBuf buf, FactionData data) {
+                ByteBufCodecs.STRING_UTF8.encode(buf, data.id);
+                ByteBufCodecs.STRING_UTF8.encode(buf, data.name);
+                ByteBufCodecs.STRING_UTF8.encode(buf, data.displayName);
+                ByteBufCodecs.VAR_INT.encode(buf, data.typeOrdinal);
                 buf.writeBoolean(data.hasColor);
-                PacketCodecs.VAR_INT.encode(buf, data.colorRgb);
+                ByteBufCodecs.VAR_INT.encode(buf, data.colorRgb);
 
-                PacketCodecs.VAR_INT.encode(buf, data.chunks.size());
+                ByteBufCodecs.VAR_INT.encode(buf, data.chunks.size());
                 for (ChunkData chunk : data.chunks) {
                     ChunkData.CODEC.encode(buf, chunk);
                 }
@@ -79,13 +78,13 @@ public class FactionPayloads {
     /**
      * Full faction data sync payload (server -> client)
      */
-    public record FactionDataSyncPayload(List<FactionData> factions) implements CustomPayload {
-        public static final Identifier PACKET_ID = Identifier.of(MOD_ID, "faction_data_sync");
-        public static final CustomPayload.Id<FactionDataSyncPayload> ID = new CustomPayload.Id<>(PACKET_ID);
-        public static final PacketCodec<RegistryByteBuf, FactionDataSyncPayload> CODEC = new PacketCodec<>() {
+    public record FactionDataSyncPayload(List<FactionData> factions) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<FactionDataSyncPayload> TYPE = 
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "faction_data_sync"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, FactionDataSyncPayload> CODEC = new StreamCodec<>() {
             @Override
-            public FactionDataSyncPayload decode(RegistryByteBuf buf) {
-                int count = PacketCodecs.VAR_INT.decode(buf);
+            public FactionDataSyncPayload decode(RegistryFriendlyByteBuf buf) {
+                int count = ByteBufCodecs.VAR_INT.decode(buf);
                 List<FactionData> factions = new ArrayList<>(count);
                 for (int i = 0; i < count; i++) {
                     factions.add(FactionData.CODEC.decode(buf));
@@ -94,8 +93,8 @@ public class FactionPayloads {
             }
 
             @Override
-            public void encode(RegistryByteBuf buf, FactionDataSyncPayload payload) {
-                PacketCodecs.VAR_INT.encode(buf, payload.factions.size());
+            public void encode(RegistryFriendlyByteBuf buf, FactionDataSyncPayload payload) {
+                ByteBufCodecs.VAR_INT.encode(buf, payload.factions.size());
                 for (FactionData faction : payload.factions) {
                     FactionData.CODEC.encode(buf, faction);
                 }
@@ -103,100 +102,100 @@ public class FactionPayloads {
         };
 
         @Override
-        public CustomPayload.Id<? extends CustomPayload> getId() {
-            return ID;
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+            return TYPE;
         }
     }
 
     /**
      * Single faction update payload (server -> client)
      */
-    public record FactionUpdatePayload(FactionData faction) implements CustomPayload {
-        public static final Identifier PACKET_ID = Identifier.of(MOD_ID, "faction_update");
-        public static final CustomPayload.Id<FactionUpdatePayload> ID = new CustomPayload.Id<>(PACKET_ID);
-        public static final PacketCodec<RegistryByteBuf, FactionUpdatePayload> CODEC = FactionData.CODEC.xmap(
+    public record FactionUpdatePayload(FactionData faction) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<FactionUpdatePayload> TYPE = 
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "faction_update"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, FactionUpdatePayload> CODEC = FactionData.CODEC.map(
                 FactionUpdatePayload::new,
                 FactionUpdatePayload::faction
         );
 
         @Override
-        public CustomPayload.Id<? extends CustomPayload> getId() {
-            return ID;
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+            return TYPE;
         }
     }
 
     /**
      * Chunk claim payload (server -> client)
      */
-    public record ChunkClaimPayload(String factionId, int chunkX, int chunkZ) implements CustomPayload {
-        public static final Identifier PACKET_ID = Identifier.of(MOD_ID, "chunk_claim");
-        public static final CustomPayload.Id<ChunkClaimPayload> ID = new CustomPayload.Id<>(PACKET_ID);
-        public static final PacketCodec<RegistryByteBuf, ChunkClaimPayload> CODEC = PacketCodec.tuple(
-                PacketCodecs.STRING, ChunkClaimPayload::factionId,
-                PacketCodecs.VAR_INT, ChunkClaimPayload::chunkX,
-                PacketCodecs.VAR_INT, ChunkClaimPayload::chunkZ,
+    public record ChunkClaimPayload(String factionId, int chunkX, int chunkZ) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<ChunkClaimPayload> TYPE = 
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "chunk_claim"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, ChunkClaimPayload> CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, ChunkClaimPayload::factionId,
+                ByteBufCodecs.VAR_INT, ChunkClaimPayload::chunkX,
+                ByteBufCodecs.VAR_INT, ChunkClaimPayload::chunkZ,
                 ChunkClaimPayload::new
         );
 
         @Override
-        public CustomPayload.Id<? extends CustomPayload> getId() {
-            return ID;
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+            return TYPE;
         }
     }
 
     /**
      * Chunk unclaim payload (server -> client)
      */
-    public record ChunkUnclaimPayload(int chunkX, int chunkZ) implements CustomPayload {
-        public static final Identifier PACKET_ID = Identifier.of(MOD_ID, "chunk_unclaim");
-        public static final CustomPayload.Id<ChunkUnclaimPayload> ID = new CustomPayload.Id<>(PACKET_ID);
-        public static final PacketCodec<RegistryByteBuf, ChunkUnclaimPayload> CODEC = PacketCodec.tuple(
-                PacketCodecs.VAR_INT, ChunkUnclaimPayload::chunkX,
-                PacketCodecs.VAR_INT, ChunkUnclaimPayload::chunkZ,
+    public record ChunkUnclaimPayload(int chunkX, int chunkZ) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<ChunkUnclaimPayload> TYPE = 
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "chunk_unclaim"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, ChunkUnclaimPayload> CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, ChunkUnclaimPayload::chunkX,
+                ByteBufCodecs.VAR_INT, ChunkUnclaimPayload::chunkZ,
                 ChunkUnclaimPayload::new
         );
 
         @Override
-        public CustomPayload.Id<? extends CustomPayload> getId() {
-            return ID;
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+            return TYPE;
         }
     }
 
     /**
      * Faction delete payload (server -> client)
      */
-    public record FactionDeletePayload(String factionId) implements CustomPayload {
-        public static final Identifier PACKET_ID = Identifier.of(MOD_ID, "faction_delete");
-        public static final CustomPayload.Id<FactionDeletePayload> ID = new CustomPayload.Id<>(PACKET_ID);
-        public static final PacketCodec<RegistryByteBuf, FactionDeletePayload> CODEC = new PacketCodec<>() {
+    public record FactionDeletePayload(String factionId) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<FactionDeletePayload> TYPE = 
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "faction_delete"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, FactionDeletePayload> CODEC = new StreamCodec<>() {
             @Override
-            public FactionDeletePayload decode(RegistryByteBuf buf) {
-                return new FactionDeletePayload(PacketCodecs.STRING.decode(buf));
+            public FactionDeletePayload decode(RegistryFriendlyByteBuf buf) {
+                return new FactionDeletePayload(ByteBufCodecs.STRING_UTF8.decode(buf));
             }
 
             @Override
-            public void encode(RegistryByteBuf buf, FactionDeletePayload payload) {
-                PacketCodecs.STRING.encode(buf, payload.factionId);
+            public void encode(RegistryFriendlyByteBuf buf, FactionDeletePayload payload) {
+                ByteBufCodecs.STRING_UTF8.encode(buf, payload.factionId);
             }
         };
 
         @Override
-        public CustomPayload.Id<? extends CustomPayload> getId() {
-            return ID;
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+            return TYPE;
         }
     }
 
     /**
      * Client request for faction data (client -> server)
      */
-    public record ClientRequestDataPayload() implements CustomPayload {
-        public static final Identifier PACKET_ID = Identifier.of(MOD_ID, "client_request_data");
-        public static final CustomPayload.Id<ClientRequestDataPayload> ID = new CustomPayload.Id<>(PACKET_ID);
-        public static final PacketCodec<RegistryByteBuf, ClientRequestDataPayload> CODEC = PacketCodec.unit(new ClientRequestDataPayload());
+    public record ClientRequestDataPayload() implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<ClientRequestDataPayload> TYPE = 
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "client_request_data"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, ClientRequestDataPayload> CODEC = StreamCodec.unit(new ClientRequestDataPayload());
 
         @Override
-        public CustomPayload.Id<? extends CustomPayload> getId() {
-            return ID;
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+            return TYPE;
         }
     }
 }

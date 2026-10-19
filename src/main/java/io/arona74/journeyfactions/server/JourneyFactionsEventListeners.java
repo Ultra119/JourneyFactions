@@ -4,7 +4,7 @@ import io.arona74.journeyfactions.JourneyFactionsMain;
 import io.icker.factions.api.events.ClaimEvents;
 import io.icker.factions.api.events.FactionEvents;
 import io.icker.factions.api.persistents.Faction;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.level.ChunkPos;
 
 /**
  * Event listeners to broadcast faction changes to JourneyFactions clients

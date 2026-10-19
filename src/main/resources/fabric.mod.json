@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "journeyfactions",
-  "version": "${version}",
+  "version": "1.0.0-mc26.3",
   "name": "JourneyFactions",
   "description": "A companion mod that displays faction territories on JourneyMap. Works on both client and server.",
   "authors": [
@@ -30,7 +30,7 @@
   },
   "depends": {
     "fabricloader": ">=0.18.1",
-    "minecraft": "~1.21.11",
+    "minecraft": ">=26.3",
     "java": ">=21",
     "fabric-api": "*"
   },

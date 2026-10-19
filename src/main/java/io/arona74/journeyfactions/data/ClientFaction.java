@@ -1,6 +1,6 @@
 package io.arona74.journeyfactions.data;
 
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.level.ChunkPos;
 
 import java.awt.Color;
 import java.util.HashSet;

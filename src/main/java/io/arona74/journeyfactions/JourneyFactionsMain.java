@@ -38,21 +38,18 @@ public class JourneyFactionsMain implements ModInitializer {
     }
 
     /**
-     * Register all network payload types.
-     * This must be done unconditionally so both client and server know about the packet formats.
+     * Register all network payload types for Minecraft 26.3.
      */
     private void registerNetworkPayloads() {
         LOGGER.debug("Registering network payload types...");
 
-        // Register payload types (server -> client)
-        PayloadTypeRegistry.playS2C().register(FactionDataSyncPayload.ID, FactionDataSyncPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(FactionUpdatePayload.ID, FactionUpdatePayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(ChunkClaimPayload.ID, ChunkClaimPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(ChunkUnclaimPayload.ID, ChunkUnclaimPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(FactionDeletePayload.ID, FactionDeletePayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(FactionDataSyncPayload.TYPE, FactionDataSyncPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(FactionUpdatePayload.TYPE, FactionUpdatePayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(ChunkClaimPayload.TYPE, ChunkClaimPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(ChunkUnclaimPayload.TYPE, ChunkUnclaimPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(FactionDeletePayload.TYPE, FactionDeletePayload.CODEC);
 
-        // Register payload types (client -> server)
-        PayloadTypeRegistry.playC2S().register(ClientRequestDataPayload.ID, ClientRequestDataPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(ClientRequestDataPayload.TYPE, ClientRequestDataPayload.CODEC);
 
         LOGGER.debug("Network payload types registered successfully");
     }
