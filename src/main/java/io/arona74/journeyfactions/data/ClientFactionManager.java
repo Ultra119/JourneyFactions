@@ -1,7 +1,7 @@
 package io.arona74.journeyfactions.data;
 
 import io.arona74.journeyfactions.JourneyFactions;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.level.ChunkPos;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

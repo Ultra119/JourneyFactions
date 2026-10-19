@@ -7,7 +7,7 @@ import journeymap.api.v2.client.event.MappingEvent;
 import journeymap.api.v2.client.event.DisplayUpdateEvent;
 import journeymap.api.v2.common.event.ClientEventRegistry;
 
-@journeymap.api.v2.client.JourneyMapPlugin(apiVersion = "2.0.0")
+@journeymap.api.v2.common.JourneyMapPlugin(apiVersion = "2.0.0")
 public class JourneyMapPlugin implements IClientPlugin {
 
     private static final String PLUGIN_ID = "journeyfactions";

@@ -4,8 +4,8 @@ import io.arona74.journeyfactions.JourneyFactions;
 import io.arona74.journeyfactions.client.gui.FactionControlsScreen;
 import journeymap.api.v2.client.IClientAPI;
 import journeymap.api.v2.client.fullscreen.ModPopupMenu;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 
 /**
  * Integrates faction controls with JourneyMap's context menu system
@@ -66,7 +66,7 @@ public class JourneyMapContextIntegration {
             }
             
             @Override
-            public ModPopupMenu addMenuItemScreen(String label, net.minecraft.client.gui.screen.Screen screen) {
+            public ModPopupMenu addMenuItemScreen(String label, net.minecraft.client.gui.screens.Screen screen) {
                 JourneyFactions.debugLog("Would add screen menu item: {}", label);
                 return this;
             }
@@ -84,9 +84,9 @@ public class JourneyMapContextIntegration {
      */
     public static void openFactionControlsScreen() {
         try {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new FactionControlsScreen());
+                client.setScreenAndShow(new FactionControlsScreen());
                 JourneyFactions.debugLog("Opened faction controls screen");
             }
         } catch (Exception e) {
@@ -108,15 +108,14 @@ public class JourneyMapContextIntegration {
      */
     private static void showToggleFeedback() {
         try {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             if (client != null && client.player != null) {
                 String message = FactionDisplayManager.isFactionDisplayEnabled() 
                     ? "§eFaction territories: §aShown" 
                     : "§eFaction territories: §cHidden";
                 
-                client.player.sendMessage(
-                    net.minecraft.text.Text.literal(message), 
-                    true // Action bar
+                client.player.sendOverlayMessage(
+                    net.minecraft.network.chat.Component.literal(message)
                 );
             }
         } catch (Exception e) {

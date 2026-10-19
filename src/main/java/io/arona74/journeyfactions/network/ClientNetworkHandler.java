@@ -5,7 +5,7 @@ import io.arona74.journeyfactions.data.ClientFaction;
 import io.arona74.journeyfactions.network.FactionPayloads.*;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.level.ChunkPos;
 
 import java.awt.Color;
 import java.util.HashSet;
@@ -33,7 +33,7 @@ public class ClientNetworkHandler {
 
     private static void registerPacketHandlers() {
         // Handle full faction data sync (sent on join or request)
-        ClientPlayNetworking.registerGlobalReceiver(FactionDataSyncPayload.ID, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(FactionDataSyncPayload.TYPE, (payload, context) -> {
             try {
                 JourneyFactions.debugLog("Receiving full faction data sync: {} factions", payload.factions().size());
 
@@ -71,7 +71,7 @@ public class ClientNetworkHandler {
         });
 
         // Handle individual faction updates
-        ClientPlayNetworking.registerGlobalReceiver(FactionUpdatePayload.ID, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(FactionUpdatePayload.TYPE, (payload, context) -> {
             try {
                 ClientFaction faction = convertToClientFaction(payload.faction());
                 if (faction != null) {
@@ -87,7 +87,7 @@ public class ClientNetworkHandler {
         });
 
         // Handle chunk claims
-        ClientPlayNetworking.registerGlobalReceiver(ChunkClaimPayload.ID, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(ChunkClaimPayload.TYPE, (payload, context) -> {
             try {
                 String factionId = payload.factionId();
                 ChunkPos chunk = new ChunkPos(payload.chunkX(), payload.chunkZ());
@@ -103,7 +103,7 @@ public class ClientNetworkHandler {
         });
 
         // Handle chunk unclaims
-        ClientPlayNetworking.registerGlobalReceiver(ChunkUnclaimPayload.ID, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(ChunkUnclaimPayload.TYPE, (payload, context) -> {
             try {
                 ChunkPos chunk = new ChunkPos(payload.chunkX(), payload.chunkZ());
                 JourneyFactions.debugLog("Received chunk unclaim: {}", chunk);
@@ -119,7 +119,7 @@ public class ClientNetworkHandler {
         });
 
         // Handle faction deletions
-        ClientPlayNetworking.registerGlobalReceiver(FactionDeletePayload.ID, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(FactionDeletePayload.TYPE, (payload, context) -> {
             try {
                 String factionId = payload.factionId();
                 JourneyFactions.debugLog("Received faction deletion: {}", factionId);

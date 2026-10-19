@@ -4,17 +4,17 @@ import io.arona74.journeyfactions.JourneyFactions;
 import io.arona74.journeyfactions.data.ClientFaction;
 import io.arona74.journeyfactions.data.ClientFactionManager;
 import journeymap.api.v2.client.IClientAPI;
-import journeymap.api.v2.client.display.Context;
+import journeymap.api.v2.common.Context;
 import journeymap.api.v2.client.display.PolygonOverlay;
 import journeymap.api.v2.client.model.MapPolygon;
 import journeymap.api.v2.client.model.MapPolygonWithHoles;
 import journeymap.api.v2.client.model.ShapeProperties;
 import journeymap.api.v2.client.model.TextProperties;
 import journeymap.api.v2.client.util.PolygonHelper;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 import java.awt.*;
 import java.util.*;
@@ -28,7 +28,7 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
 
     private PolygonOverlay createLabelOnlyOverlay(
             String overlayId,
-            RegistryKey<World> worldKey,
+            ResourceKey<Level> worldKey,
             BlockPos anchor,
             TextProperties textProps,
             String label
@@ -83,7 +83,7 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
         // Single chunk or fully solid region with no detected edge: just use it
         if (dist.isEmpty()) {
             ChunkPos any = region.iterator().next();
-            return new BlockPos(any.x * 16 + 8, LABEL_Y, any.z * 16 + 8);
+            return new BlockPos(any.x() * 16 + 8, LABEL_Y, any.z() * 16 + 8);
         }
 
         // BFS into the interior
@@ -106,22 +106,22 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
         }
         if (best == null) best = region.iterator().next();
 
-        return new BlockPos(best.x * 16 + 8, LABEL_Y, best.z * 16 + 8);
+        return new BlockPos(best.x() * 16 + 8, LABEL_Y, best.z() * 16 + 8);
     }
 
     private boolean isEdgeChunk(ChunkPos c, Set<ChunkPos> set) {
-        return !(set.contains(new ChunkPos(c.x + 1, c.z)) &&
-                set.contains(new ChunkPos(c.x - 1, c.z)) &&
-                set.contains(new ChunkPos(c.x, c.z + 1)) &&
-                set.contains(new ChunkPos(c.x, c.z - 1)));
+        return !(set.contains(new ChunkPos(c.x() + 1, c.z())) &&
+                set.contains(new ChunkPos(c.x() - 1, c.z())) &&
+                set.contains(new ChunkPos(c.x(), c.z() + 1)) &&
+                set.contains(new ChunkPos(c.x(), c.z() - 1)));
     }
 
     private ChunkPos[] neighbors(ChunkPos c) {
         return new ChunkPos[] {
-            new ChunkPos(c.x + 1, c.z),
-            new ChunkPos(c.x - 1, c.z),
-            new ChunkPos(c.x, c.z + 1),
-            new ChunkPos(c.x, c.z - 1)
+            new ChunkPos(c.x() + 1, c.z()),
+            new ChunkPos(c.x() - 1, c.z()),
+            new ChunkPos(c.x(), c.z() + 1),
+            new ChunkPos(c.x(), c.z() - 1)
         };
     }
     
@@ -217,10 +217,10 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
         int maxChunkZ = Integer.MIN_VALUE;
 
         for (ChunkPos c : region) {
-            if (c.x < minChunkX) minChunkX = c.x;
-            if (c.x > maxChunkX) maxChunkX = c.x;
-            if (c.z < minChunkZ) minChunkZ = c.z;
-            if (c.z > maxChunkZ) maxChunkZ = c.z;
+            if (c.x() < minChunkX) minChunkX = c.x();
+            if (c.x() > maxChunkX) maxChunkX = c.x();
+            if (c.z() < minChunkZ) minChunkZ = c.z();
+            if (c.z() > maxChunkZ) maxChunkZ = c.z();
         }
 
         // Convert chunks to block coords for edges
@@ -244,7 +244,7 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
         }
         
         String factionId = faction.getId();
-        RegistryKey<World> worldKey = World.OVERWORLD;
+        ResourceKey<Level> worldKey = Level.OVERWORLD;
         
         JourneyFactions.debugLog("Creating overlay for faction: {} with {} chunks", faction.getDisplayName(), claimedChunks.size());
         
@@ -316,7 +316,7 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
                             break;
                         case FIRST_CHUNK_CENTER:
                             ChunkPos first = region.iterator().next();
-                            anchor = new BlockPos(first.x * 16 + 8, LABEL_Y, first.z * 16 + 8);
+                            anchor = new BlockPos(first.x() * 16 + 8, LABEL_Y, first.z() * 16 + 8);
                             JourneyFactions.debugLog("First chunk center anchor: {}", anchor);
                             break;
                         case FARTHEST_INTERIOR_CHUNK:
@@ -450,10 +450,10 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
         
         // Check 4 adjacent chunks
         ChunkPos[] neighbors = {
-            new ChunkPos(start.x + 1, start.z),     // East
-            new ChunkPos(start.x - 1, start.z),     // West
-            new ChunkPos(start.x, start.z + 1),     // South
-            new ChunkPos(start.x, start.z - 1)      // North
+            new ChunkPos(start.x() + 1, start.z()),     // East
+            new ChunkPos(start.x() - 1, start.z()),     // West
+            new ChunkPos(start.x(), start.z() + 1),     // South
+            new ChunkPos(start.x(), start.z() - 1)      // North
         };
         
         for (ChunkPos neighbor : neighbors) {
@@ -466,8 +466,8 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
      */
     private List<BlockPos> createChunkRectangle(ChunkPos chunk) {
         List<BlockPos> points = new ArrayList<>();
-        int worldX = chunk.x * 16;
-        int worldZ = chunk.z * 16;
+        int worldX = chunk.x() * 16;
+        int worldZ = chunk.z() * 16;
         
         // Create rectangle (clockwise)
         points.add(new BlockPos(worldX, 70, worldZ));           // Top-left
@@ -484,10 +484,10 @@ public class FactionOverlayManager implements ClientFactionManager.FactionUpdate
      */
     private List<BlockPos> createBoundingRectangle(Set<ChunkPos> chunks) {
         // Find bounds
-        int minX = chunks.stream().mapToInt(c -> c.x).min().orElse(0);
-        int maxX = chunks.stream().mapToInt(c -> c.x).max().orElse(0);
-        int minZ = chunks.stream().mapToInt(c -> c.z).min().orElse(0);
-        int maxZ = chunks.stream().mapToInt(c -> c.z).max().orElse(0);
+        int minX = chunks.stream().mapToInt(ChunkPos::x).min().orElse(0);
+        int maxX = chunks.stream().mapToInt(ChunkPos::x).max().orElse(0);
+        int minZ = chunks.stream().mapToInt(ChunkPos::z).min().orElse(0);
+        int maxZ = chunks.stream().mapToInt(ChunkPos::z).max().orElse(0);
         
         // Convert to world coordinates
         int worldMinX = minX * 16;

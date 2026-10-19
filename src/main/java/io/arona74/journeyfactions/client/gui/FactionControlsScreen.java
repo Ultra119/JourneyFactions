@@ -3,17 +3,16 @@ package io.arona74.journeyfactions.client.gui;
 import io.arona74.journeyfactions.JourneyFactions;
 import io.arona74.journeyfactions.data.ClientFaction;
 import io.arona74.journeyfactions.journeymap.FactionDisplayManager;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import java.util.Collection;
 
 /**
  * Custom GUI screen for faction controls
- * Based on MapFrontiers approach for JourneyMap integration
  */
 public class FactionControlsScreen extends Screen {
     
@@ -21,15 +20,14 @@ public class FactionControlsScreen extends Screen {
     private static final int BUTTON_HEIGHT = 20;
     private static final int BUTTON_SPACING = 25;
     
-    private ButtonWidget toggleButton;
-    private ButtonWidget statusButton;
-    private ButtonWidget closeButton;
+    private Button toggleButton;
+    private Button closeButton;
     
     private int factionCount = 0;
     private int totalChunks = 0;
     
     public FactionControlsScreen() {
-        super(Text.literal("Faction Controls"));
+        super(Component.literal("Faction Controls"));
         updateFactionStats();
     }
     
@@ -41,30 +39,29 @@ public class FactionControlsScreen extends Screen {
         int startY = this.height / 2 - 60;
         
         // Toggle display button
-        this.toggleButton = ButtonWidget.builder(
+        this.toggleButton = Button.builder(
             getToggleButtonText(),
             button -> toggleFactionDisplay()
-        ).dimensions(centerX - BUTTON_WIDTH / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+        ).bounds(centerX - BUTTON_WIDTH / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
         
         // Close button
-        this.closeButton = ButtonWidget.builder(
-            Text.literal("Close"),
-            button -> this.close()
-        ).dimensions(centerX - BUTTON_WIDTH / 2, startY + BUTTON_SPACING * 3, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+        this.closeButton = Button.builder(
+            Component.literal("Close"),
+            button -> this.onClose()
+        ).bounds(centerX - BUTTON_WIDTH / 2, startY + BUTTON_SPACING * 3, BUTTON_WIDTH, BUTTON_HEIGHT).build();
         
-        this.addDrawableChild(this.toggleButton);
-        this.addDrawableChild(this.statusButton);
-        this.addDrawableChild(this.closeButton);
+        this.addRenderableWidget(this.toggleButton);
+        this.addRenderableWidget(this.closeButton);
     }
     
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float delta) {
         // Draw background
-        this.renderBackground(context, mouseX, mouseY, delta);
+        this.extractMenuBackground(extractor);
         
         // Draw title
-        context.drawCenteredTextWithShadow(
-            this.textRenderer,
+        extractor.centeredText(
+            this.font,
             this.title,
             this.width / 2,
             20,
@@ -74,9 +71,9 @@ public class FactionControlsScreen extends Screen {
         // Draw faction information
         int infoY = 50;
         String statusLine = String.format("Factions: %d | Claimed Chunks: %d", factionCount, totalChunks);
-        context.drawCenteredTextWithShadow(
-            this.textRenderer,
-            Text.literal(statusLine),
+        extractor.centeredText(
+            this.font,
+            statusLine,
             this.width / 2,
             infoY,
             0xCCCCCC
@@ -84,32 +81,32 @@ public class FactionControlsScreen extends Screen {
         
         // Draw current display status
         String displayStatus = FactionDisplayManager.isFactionDisplayEnabled() ? "Visible" : "Hidden";
-        Formatting statusColor = FactionDisplayManager.isFactionDisplayEnabled() ? Formatting.GREEN : Formatting.RED;
-        context.drawCenteredTextWithShadow(
-            this.textRenderer,
-            Text.literal("Faction Territories: ").append(Text.literal(displayStatus).formatted(statusColor)),
+        ChatFormatting statusColor = FactionDisplayManager.isFactionDisplayEnabled() ? ChatFormatting.GREEN : ChatFormatting.RED;
+        extractor.centeredText(
+            this.font,
+            Component.literal("Faction Territories: ").append(Component.literal(displayStatus).withStyle(statusColor)),
             this.width / 2,
             infoY + 15,
             0xCCCCCC
         );
         
         // Draw keybinding hint
-        context.drawCenteredTextWithShadow(
-            this.textRenderer,
-            Text.literal("Tip: Press 'G' key to toggle quickly").formatted(Formatting.GRAY),
+        extractor.centeredText(
+            this.font,
+            Component.literal("Tip: Press 'G' key to toggle quickly").withStyle(ChatFormatting.GRAY),
             this.width / 2,
             this.height - 30,
             0x888888
         );
         
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(extractor, mouseX, mouseY, delta);
     }
     
-    private Text getToggleButtonText() {
+    private Component getToggleButtonText() {
         if (FactionDisplayManager.isFactionDisplayEnabled()) {
-            return Text.literal("Hide Faction Territories").formatted(Formatting.RED);
+            return Component.literal("Hide Faction Territories").withStyle(ChatFormatting.RED);
         } else {
-            return Text.literal("Show Faction Territories").formatted(Formatting.GREEN);
+            return Component.literal("Show Faction Territories").withStyle(ChatFormatting.GREEN);
         }
     }
     
@@ -120,16 +117,13 @@ public class FactionControlsScreen extends Screen {
         this.toggleButton.setMessage(getToggleButtonText());
         
         // Show feedback message
-        if (this.client != null && this.client.player != null) {
+        if (this.minecraft != null && this.minecraft.player != null) {
             String message = FactionDisplayManager.isFactionDisplayEnabled() 
                 ? "§eFaction territories: §aShown" 
                 : "§eFaction territories: §cHidden";
             
-            this.client.player.sendMessage(Text.literal(message), true);
+            this.minecraft.player.sendOverlayMessage(Component.literal(message));
         }
-        
-        // JourneyFactions.LOGGER.info("Faction display toggled via GUI to: {}", 
-        //    FactionDisplayManager.isFactionDisplayEnabled() ? "ENABLED" : "DISABLED");
     }
     
     private void updateFactionStats() {
@@ -145,18 +139,12 @@ public class FactionControlsScreen extends Screen {
                 totalChunks += faction.getClaimedChunks().size();
             }
         } catch (Exception e) {
-            // JourneyFactions.LOGGER.warn("Error updating faction stats: {}", e.getMessage());
+            // ignore
         }
     }
     
     @Override
-    public void close() {
-        super.close();
-        // JourneyFactions.LOGGER.debug("Faction controls screen closed");
-    }
-    
-    @Override
-    public boolean shouldPause() {
-        return false; // Don't pause the game when this screen is open
+    public boolean isPauseScreen() {
+        return false;
     }
 }
