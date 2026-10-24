@@ -1,11 +1,11 @@
 plugins {
-    id 'fabric-loom' version '1.14-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version '1.19.3'
     id 'maven-publish'
 }
 
 // Modern Gradle syntax - no more deprecation warnings
 base {
-    archivesName = "${project.name}-mc${project.minecraft_version}"
+    archivesName = "${project.archives_base_name}-mc${project.minecraft_version}"
 }
 version = project.mod_version
 group = project.maven_group
@@ -48,37 +48,45 @@ loom {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // JourneyMap API 26.3
-    modImplementation files("C:/Users/pasas/Desktop/minecraft/mods_src/libs/journeymap-api-fabric-26.3-2.0.0.jar")
+    implementation "info.journeymap:journeymap-api-fabric:26.3-2.0.0"
 
     // Cloth config 26.3
-    modCompileOnly files("C:/Users/pasas/Desktop/minecraft/server2026/mods/cloth-config-fabric-26.3.159.jar")
+    compileOnly "me.shedaniel.cloth:cloth-config-fabric:26.3.159"
+
+    // ModMenu for config screen integration
+    compileOnly "com.terraformersmc:modmenu:21.0.0"
 
     // Factions mod 26.3
-    modCompileOnly files("C:/Users/pasas/Desktop/minecraft/server2026/mods/factions-mc26.3-2.9.6.jar")
+    compileOnly "maven.modrinth:factions:2.9.6"
 }
 
+def modVersion = project.version
+def mcVersion = project.minecraft_version
+def loaderVersion = project.loader_version
+
 processResources {
-    inputs.property "version", version
+    inputs.property "version", modVersion
+    inputs.property "minecraft_version", mcVersion
+    inputs.property "loader_version", loaderVersion
     filteringCharset = "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand([
-            "version": version,
-            "minecraft_version": project.minecraft_version,
-            "loader_version": project.loader_version
+            "version": modVersion,
+            "minecraft_version": mcVersion,
+            "loader_version": loaderVersion
         ])
     }
 }
 
 java {
     withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
