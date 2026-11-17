@@ -90,10 +90,10 @@ public class FactionControlsScreen extends Screen {
             0xCCCCCC
         );
         
-        // Draw keybinding hint
+        // Draw toolbar hint
         extractor.centeredText(
             this.font,
-            Component.literal("Tip: Press 'G' key to toggle quickly").withStyle(ChatFormatting.GRAY),
+            Component.literal("Tip: Use the JourneyMap toolbar or right-click menu to toggle").withStyle(ChatFormatting.GRAY),
             this.width / 2,
             this.height - 30,
             0x888888

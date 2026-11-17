@@ -5,6 +5,7 @@ import net.minecraft.world.level.ChunkPos;
 import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Client-side representation of a faction with minimal data needed for map display
@@ -29,7 +30,7 @@ public class ClientFaction {
         this.id = id;
         this.name = name;
         this.displayName = name;
-        this.claimedChunks = new HashSet<>();
+        this.claimedChunks = ConcurrentHashMap.newKeySet();
         this.color = null; // Will be set from server data
         this.type = FactionType.PLAYER;
         this.lastUpdated = System.currentTimeMillis();

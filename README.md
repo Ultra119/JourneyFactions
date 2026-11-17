@@ -5,9 +5,11 @@ A companion mod that displays faction territories on JourneyMap. Works on both c
 ## Features
 
 - **Real-time faction territory display** on JourneyMap
+- **JourneyMap UI controls** - toolbar toggle/settings buttons and right-click context menu on the fullscreen map
 - **Hole detection** - territories with unclaimed chunks inside show correctly
 - **Clean polygon rendering** - no ugly chunk grids
 - **Multiple disconnected regions** support
+- **Async overlay computation** - prevents freezes and crashes on large faction claims
 - **Server-side support** - syncs territories directly with the standard Factions mod (no custom Factions fork required)
 
 ## Requirements
